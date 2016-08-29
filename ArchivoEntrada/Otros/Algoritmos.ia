@@ -1,0 +1,86 @@
+Def Dif_medio(1.5){	
+	BombA();
+	Move(+X);
+	Move(+X);
+	if(Verificar(-x)){
+		While(Verificar(+X))
+		{
+			Move(+X);
+		}
+	}
+	Move(-Y);
+	Move(+X);
+	Move(-Y);
+	bOMBa();
+}
+
+Def Dif_Facil(2.0){
+	Move(+X);
+	Move(+X);
+	Move(-Y);
+	
+	BombA();
+
+	if(Verificar(-x)){
+	
+		While(Verificar(+X))
+		{
+			Move(+X);
+		}
+	}
+	elseif(verificar(+y)){
+		if(verificar(-y)){
+		
+		}
+	}
+	else{
+	
+	}
+	
+	
+	Move(-Y);
+	Move(+X);
+	Move(-Y);
+	bOMBa();
+}
+
+Def Dif_Alto(1.0){
+	Move(+X);
+	Move(+X);
+	Move(-Y);
+	
+	BombA();
+
+	if(Verificar(-x)){
+		While(Verificar(+X))
+		{
+			Move(+X);
+		}
+	}
+	
+	Move(-Y);
+	Move(+X);
+	Move(-Y);
+	bOMBa();
+
+}
+
+Def dif_Experto(0.5){
+	Move(+X);
+	Move(+X);
+	Move(-Y);
+	
+	BombA();
+
+	if(Verificar(-x)){
+		While(Verificar(+X))
+		{
+			Move(+X);
+		}
+	}
+	
+	Move(-Y);
+	Move(+X);
+	Move(-Y);
+	bOMBa();
+}

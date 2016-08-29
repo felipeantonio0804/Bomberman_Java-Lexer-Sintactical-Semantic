@@ -1,0 +1,290 @@
+package AnalizadorInteligencia;
+import java_cup.runtime.*;
+import Clases.*;
+import Almacenamiento.*;
+import java.util.ArrayList;
+
+parser code
+{:
+
+	public ListaMetodos listaMetodosNodo = new ListaMetodos();
+	
+	private ArrayList<ErrorSintactico> listaErrores = new ArrayList<ErrorSintactico>();
+	private ArrayList<Metodo> listaMetodos = new ArrayList<Metodo>();
+			
+	public void ingresarErrorSintactico(String lexema,int fila,int columna,String descripcion){
+		listaErrores.add(new ErrorSintactico(lexema,fila,columna,descripcion));
+	}
+					
+	public ArrayList<ErrorSintactico> getListaErrores(){
+		return listaErrores;
+	}
+	
+	public ArrayList<Metodo> getListaMetodos(){
+		return listaMetodos;
+	}
+	
+	public void agregarMetodo(String identificador, String retardo, int fila, int columna){
+		if(!existeMetodo(identificador)){
+			listaMetodos.add(new Metodo(identificador, retardo));
+		}
+		else{
+			ingresarErrorSintactico(identificador,fila,columna,"Error Semantico, Metodo ya existente con igual identificador, archivo Inteligencia.ia");
+		}
+	}
+	
+	private boolean existeMetodo(String identificador){
+		for(int i=0;i<listaMetodos.size();i++){
+			if(listaMetodos.get(i).getIdentificador().toLowerCase().equals(identificador.toLowerCase())){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+		
+    /**Metodo al que se llama automticamente ante algun error sintactico.*/
+    public void syntax_error(Symbol s){
+		try{
+			System.out.println("Error Sintactico. Línea: " + s.right + ", Columna: " + s.left + ". Identificador " + s.value + " no reconocido.");
+			ingresarErrorSintactico(s.value.toString(),s.right,s.left,"Error Sintactico, archivo Inteligencia.ia");
+		}
+		catch(Exception e){
+			System.out.println(e);
+		}
+	}
+    /**Metodo al que se llama en el momento en que ya no es posible una recuperacion de errores.*/
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception{
+		try{
+			System.out.println("Error Sintactico Irrecuperable. Linea: " + s.right+ ", Columna: "+s.left+". Identificador " + s.value + " no reconocido.");
+			ingresarErrorSintactico("FIN ARCHIVO",0,0,"Error Sintactico Irrecuperable, Se llego al fin de archivo sin lograr recuperacion, archivo Inteligencia.ia");
+		}
+		catch(Exception e){
+			System.out.println(e);
+		}
+	}
+	
+:}
+
+action code
+{:
+	public void muestra(String s){
+		System.out.println(s);
+	}
+	
+	private void agregarMetodo(String identificador, String retardo, int fila, int columna){
+		parser.agregarMetodo(identificador,retardo,fila,columna);		
+	}
+	
+	private void ingresarErrorSintactico(String lexema,int fila,int columna,String descripcion){
+		parser.ingresarErrorSintactico(lexema,fila,columna,descripcion);
+	}
+	
+	private void ingresarMetodoLista(Nodo metodo){
+		String id = metodo.valor;
+		if(parser.listaMetodosNodo.buscar(id.toLowerCase())==null){
+			parser.listaMetodosNodo.agregar(id.toLowerCase(),metodo);
+		}
+	}
+:}
+
+    /*Declaracion de simbolos terminales*/
+        terminal bomba,move,menosx,masx,menosy,masy,verificar,espera,tokenif,elseif,tokenelse,tokenwhile,def,decimal,identificador,parentesisAbre,parentesisCierre,llavesAbre,llavesCierre,puntoComa,errorLexico;
+	/*Declaracion de simbolos NO terminales*/
+        non terminal INICIO, CUERPO;
+		non terminal Nodo CONDICION, INSTRUCCIONES, INSTRUCCIONESWHILE, INSTRUCCIONESIF, WHILE, IF, OPCIONES, ELSE, ELSEIF, DIRECCION;
+		non terminal Nodo METODO;
+	/*Inicio de la gramatica*/
+        start with INICIO;
+        
+		INICIO::= 	CUERPO					
+					|error llavesCierre {:muestra("---------------------BLOQUE CON ERRORES SINTACTICOS---------------------");:} CUERPO;
+        
+		CUERPO::=	CUERPO METODO:metodo 
+					{:
+						muestra("FIN DE METODO----------------------");
+						ingresarMetodoLista(metodo);
+					:} 
+					
+					|METODO:metodo 
+					{:
+						muestra("FIN DE METODO---------------------");
+						ingresarMetodoLista(metodo);
+					:}
+					;
+					
+		METODO::=	def identificador:a parentesisAbre decimal:b parentesisCierre llavesAbre INSTRUCCIONES:instrucciones
+						{:
+							agregarMetodo(a.toString(),b.toString(),aright,aleft);
+							
+							Nodo padre = new Nodo(a.toString());
+							padre.hijos.add(new Nodo(b.toString()));
+							padre.hijos.add(instrucciones);
+							RESULT = padre;
+						:}
+					llavesCierre
+					;
+		
+		INSTRUCCIONES::=	INSTRUCCIONES:ins	WHILE:w 
+							{:
+								Nodo padre = ins;
+								padre.hijos.add(w);
+								RESULT = padre;
+							:}
+							|INSTRUCCIONES:ins	IF:i 
+							{:
+								Nodo padre = ins;
+								padre.hijos.add(i);
+								RESULT = padre;
+							:}
+							|INSTRUCCIONES:ins	OPCIONES:o 
+							{:
+								Nodo padre = ins;
+								padre.hijos.add(o);
+								RESULT = padre;
+							:}
+							|WHILE:w	
+							{:
+								Nodo padre = new Nodo("CUERPO");
+								padre.hijos.add(w);
+								RESULT = padre;
+							:}
+							|IF:i
+							{:
+								Nodo padre = new Nodo("CUERPO");
+								padre.hijos.add(i);
+								RESULT = padre;
+							:}
+							|OPCIONES:o
+							{:
+								Nodo padre = new Nodo("CUERPO");
+								padre.hijos.add(o);
+								RESULT = padre;
+							:}
+							;
+							
+		WHILE::=	tokenwhile parentesisAbre CONDICION:condicion parentesisCierre llavesAbre INSTRUCCIONESWHILE:instrucciones llavesCierre
+					{:
+						Nodo padre = new Nodo("WHILE");
+						padre.hijos.add(condicion);
+						padre.hijos.add(instrucciones);
+						RESULT = padre;
+					:}
+					;
+		
+		INSTRUCCIONESWHILE::= 	INSTRUCCIONES:instrucciones
+								{:
+									RESULT = instrucciones;
+								:}
+								|;
+		
+		IF::=		tokenif parentesisAbre CONDICION:condicion parentesisCierre llavesAbre INSTRUCCIONESIF:instrucciones llavesCierre ELSE:opciones
+					{:
+						Nodo padre = new Nodo("IF");
+						padre.hijos.add(condicion);
+						padre.hijos.add(instrucciones);
+						padre.hijos.add(opciones);
+						RESULT = padre;
+					:}
+					|tokenif parentesisAbre CONDICION:condicion parentesisCierre llavesAbre INSTRUCCIONESIF:instrucciones llavesCierre
+					{:
+						Nodo padre = new Nodo("IF");
+						padre.hijos.add(condicion);
+						padre.hijos.add(instrucciones);
+						RESULT = padre;
+					:};
+					
+		INSTRUCCIONESIF::=	INSTRUCCIONES:instrucciones
+							{:
+								RESULT = instrucciones;
+							:}
+							|;
+					
+		OPCIONES::=		move parentesisAbre DIRECCION:direccion parentesisCierre puntoComa
+						{:
+							Nodo padre = new Nodo("MOVE");
+							padre.hijos.add(direccion);
+							RESULT = padre;
+						:}
+						|bomba puntoComa
+						{:
+							RESULT = new Nodo("BOMBA");
+						:}
+						|espera parentesisAbre decimal:d parentesisCierre puntoComa
+						{:
+							Nodo padre = new Nodo("ESPERA");
+							padre.hijos.add(new Nodo(d.toString()));
+							RESULT = padre;
+						:}
+						;
+						
+		CONDICION::=	verificar parentesisAbre DIRECCION:direccion	parentesisCierre
+						{:
+							Nodo padre = new Nodo("CONDICION");
+							padre.hijos.add(direccion);
+							RESULT = padre;
+						:}
+						;
+
+		DIRECCION::=	menosx
+						{:
+							RESULT = new Nodo("-X");
+						:}
+						|masx
+						{:
+							RESULT = new Nodo("+X");
+						:}
+						|menosy
+						{:
+							RESULT = new Nodo("-Y");
+						:}
+						|masy
+						{:
+							RESULT = new Nodo("+Y");
+						:}
+						;
+					
+					
+		ELSE::=		tokenelse llavesAbre INSTRUCCIONESIF:instrucciones llavesCierre
+					{:
+						Nodo padre = new Nodo("OPCIONES");
+						Nodo hijo = new Nodo("ELSE");
+						padre.hijos.add(hijo);
+						hijo.hijos.add(instrucciones);
+						RESULT = padre;
+					:}
+					|ELSEIF:ins tokenelse llavesAbre INSTRUCCIONESIF:instrucciones llavesCierre
+					{:
+						Nodo padre = ins;
+						Nodo hijo = new Nodo("ELSE");
+						padre.hijos.add(hijo);
+						hijo.hijos.add(instrucciones);
+						RESULT = padre;
+					:}
+					|ELSEIF:ins
+					{:
+						RESULT = ins;
+					:}
+					;
+					
+		ELSEIF::=	ELSEIF:ins	elseif parentesisAbre CONDICION:condicion parentesisCierre llavesAbre INSTRUCCIONESIF:instrucciones llavesCierre 
+					{:
+						Nodo padre = ins;
+						Nodo hijo = new Nodo("ELSE IF");
+						padre.hijos.add(hijo);
+						hijo.hijos.add(condicion);
+						hijo.hijos.add(instrucciones);
+						RESULT = padre;
+						
+					:}
+					|elseif parentesisAbre CONDICION:condicion parentesisCierre llavesAbre INSTRUCCIONESIF:instrucciones llavesCierre
+					{:
+						Nodo padre = new Nodo("OPCIONES");
+						Nodo hijo = new Nodo("ELSE IF");
+						padre.hijos.add(hijo);
+						hijo.hijos.add(condicion);
+						hijo.hijos.add(instrucciones);
+						RESULT = padre;
+					:}
+					;
+					

@@ -1,0 +1,460 @@
+package AnalizadorRecursos;
+import java_cup.runtime.*;
+import Almacenamiento.*;
+import Clases.*;
+import java.util.ArrayList;
+
+parser code
+{:
+	private boolean primeroHeroe, primeroEnemigo = false;
+	private ArrayList<ErrorSintactico> listaErrores = new ArrayList<ErrorSintactico>();
+	private ArrayList<Variable> listaVariables = new ArrayList<Variable>();
+	private ArrayList<Metodo> listaMetodos = null;
+		
+	public void ingresarErrorSintactico(String lexema,int fila,int columna,String descripcion){
+		listaErrores.add(new ErrorSintactico(lexema,fila,columna,descripcion));
+	}
+	
+	public boolean ingresoVariable(String identificador, String tipo, int fila, int columna){
+		if(!existeVariable(identificador)){
+			listaVariables.add(new Variable(identificador, tipo));
+			return true;
+		}
+		else{
+			ingresarErrorSintactico(identificador,fila,columna,"Error Semantico, Variable ya existe archivo Recursos.rr");
+			return false;
+		}
+	}
+			
+	private boolean existeVariable(String identificador){
+		for(int i=0;i<listaVariables.size();i++){
+			if(listaVariables.get(i).getIdentificador().toLowerCase().equals(identificador.toLowerCase())){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public Variable getVariable(String identificador){
+		if(existeVariable(identificador)){
+			for(int i=0;i<listaVariables.size();i++){
+				if(listaVariables.get(i).getIdentificador().toLowerCase().equals(identificador.toLowerCase())){
+					return listaVariables.get(i);
+				}
+			}
+			return null;
+		}
+		else{
+			return null;
+		}
+	}
+	
+	public void setListaMetodos(ArrayList<Metodo> listaMetodos){
+		this.listaMetodos = listaMetodos;
+	}
+	
+	public boolean existeMetodo(String identificador){
+		if(listaMetodos!=null){
+			for(int i = 0; i<listaMetodos.size();i++){
+				if(listaMetodos.get(i).getIdentificador().toLowerCase().equals(identificador.toLowerCase())){
+					return true;
+				}
+			}
+			return false;
+		}
+		return false;
+	}
+	
+	public ArrayList<ErrorSintactico> getListaErrores(){
+		return listaErrores;
+	}
+	
+	public ArrayList<Variable> getListaVariables(){
+		return listaVariables;
+	}
+		
+    /**Metodo al que se llama automticamente ante algun error sintactico.*/
+    public void syntax_error(Symbol s){
+        try{
+			System.out.println("Error Sintactico. Línea: " + s.right + ", Columna: " + s.left + ". Identificador " + s.value + " no reconocido.");
+			ingresarErrorSintactico(s.value.toString(),s.right,s.left,"Error Sintactico, archivo Recursos.rr");
+		}
+		catch(Exception e){
+			System.out.println(e);
+		}
+	}
+    /**Metodo al que se llama en el momento en que ya no es posible una recuperacion de errores.*/
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception{
+        try{
+			System.out.println("Error Sintactico Irrecuperable. Linea: " + s.right+ ", Columna: "+s.left+". Identificador " + s.value + " no reconocido.");
+			ingresarErrorSintactico("FIN ARCHIVO",0,0,"Error Sintactico Irrecuperable, Se llego al fin de archivo sin lograr recuperacion, archivo Recursos.rr");
+		}
+		catch(Exception e){
+			System.out.println(e);
+		}
+	}
+	
+	public void setPrimeroHeroe(boolean cambio){
+		primeroHeroe = cambio;
+	}
+	
+	public void setPrimeroEnemigo(boolean cambio){
+		primeroEnemigo = cambio;
+	}
+	
+	public boolean getPrimeroHeroe(){
+		return primeroHeroe;
+	}
+	
+	public boolean getPrimeroEnemigo(){
+		return primeroEnemigo;
+	}
+	
+:}
+
+action code
+{:
+	
+	
+	private boolean ingresoVariable(String identificador, String tipo, int fila, int columna){
+		return parser.ingresoVariable(identificador,tipo,fila,columna);
+	}
+	
+	private Variable getVariable(String identificador){
+		return parser.getVariable(identificador);
+	}
+	
+	private void ingresarErrorSintactico(String lexema,int fila,int columna,String descripcion){
+		parser.ingresarErrorSintactico(lexema,fila,columna,descripcion);
+	}
+	
+	public void muestra(String s){
+		System.out.println(s);
+	}
+	
+	public boolean existeMetodo(String identificador){
+		return parser.existeMetodo(identificador);
+	}
+	
+	private void setPrimeroHeroe(){
+		parser.setPrimeroHeroe(true);
+	}
+	
+	private void setPrimeroEnemigo(){
+		parser.setPrimeroEnemigo(true);
+	}
+:}
+
+    /*Declaracion de simbolos terminales*/
+        terminal escenario, heroe, enemigo, img, corazones, algoritmo, obstaculo, dest, v, f, bombar, fuego, bomba, corazon, entero, ruta, dosPuntos, llaveAbre, llaveCierre, errorLexico;
+		terminal String identificador;
+	/*Declaracion de simbolos NO terminales*/
+        non terminal INICIO, CUERPO, ESCENARIO, HEROE, ENEMIGO, OBSTACULO, POWERUP;
+		non terminal String IMAGEN, ALGORITMO, DESTRUCCION, CORAZONES, OPCION;
+		non terminal String [] PROPIEDADESOBSTACULO, PROPIEDADESHEROE, PROPIEDADESENEMIGO;
+	/*Inicio de la gramatica*/
+        start with INICIO;
+        
+		INICIO::= 	CUERPO;
+        
+		CUERPO::=		ESCENARIO {:muestra("FIN ESCENARIO-----------------------------------------");:} CUERPO
+						|HEROE {:muestra("FIN HEROE-----------------------------------------");:}CUERPO
+						|ENEMIGO {:muestra("FIN ENEMIGO-----------------------------------------");:} CUERPO
+						|OBSTACULO {:muestra("FIN OBSTACULO-----------------------------------------");:} CUERPO
+						|POWERUP {:muestra("FIN POWERUP-----------------------------------------");:} CUERPO
+						|ESCENARIO {:muestra("FIN ESCENARIO-----------------------------------------");:} 
+						|HEROE {:muestra("FIN HEROE-----------------------------------------");:} 
+						|ENEMIGO {:muestra("FIN ENEMIGO-----------------------------------------");:} 
+						|OBSTACULO	{:muestra("FIN OBSTACULO-----------------------------------------");:} 
+						|POWERUP	{:muestra("FIN POWERUP-----------------------------------------");:} 
+						|error llaveCierre {:muestra("-----------------------------------------BLOQUE CON ERRORES SINTACTICOS-----------------------------------------");:} CUERPO;
+						
+						
+        ESCENARIO ::= 	escenario:a dosPuntos llaveAbre	IMAGEN:b	
+							{: 	
+								boolean ingreso = ingresoVariable("escenario","escenario",aright,aleft); 
+								Variable variable = getVariable("escenario"); 
+								if(variable!=null&&ingreso){ 
+									variable.setRuta(b);
+								}
+							:}
+						llaveCierre
+						;
+						
+		
+		HEROE ::=		heroe dosPuntos identificador:id llaveAbre	PROPIEDADESHEROE:b 	
+							{: 
+								setPrimeroHeroe();
+								boolean ingreso = ingresoVariable(id,"heroe",idright,idleft); 
+								Variable variable = getVariable(id); 
+								if(variable!=null&&ingreso){ 
+									variable.setRuta(b[0]); 
+									if(b[1]!=null){
+										variable.setCorazones(b[1]);
+									}
+									else{
+										variable.setCorazones("3");
+									}
+								}
+							:}
+						llaveCierre
+						;
+						
+		
+		ENEMIGO ::=		enemigo dosPuntos identificador:id llaveAbre	PROPIEDADESENEMIGO:b
+							{: 
+								setPrimeroEnemigo();
+								boolean ingreso = ingresoVariable(id,"enemigo",idright,idleft); 
+								Variable variable = getVariable(id); 
+								if(variable!=null&&ingreso){ 
+									variable.setRuta(b[0]); 
+									if(b[1]!=null){
+										variable.setCorazones(b[1]);
+									}
+									else{
+										variable.setCorazones("1");
+									} 
+									variable.setAlgoritmo(b[2]);
+								}
+							:}
+						llaveCierre
+						;
+						
+		
+		OBSTACULO::=	obstaculo dosPuntos  identificador:id llaveAbre PROPIEDADESOBSTACULO:b 	
+							{: 
+								boolean ingreso = ingresoVariable(id,"obstaculo",idright,idleft); 
+								Variable variable = getVariable(id); 
+								if(variable!=null&&ingreso){ 
+									variable.setRuta(b[0]); 
+									variable.setDestruible(b[1]);
+								} 
+							:}
+						llaveCierre
+						;
+						
+		
+		PROPIEDADESHEROE ::=	PROPIEDADESHEROE:b  IMAGEN:a	
+								{:	
+									String[] arreglo; 
+									if(b!=null){
+										arreglo = b;
+									}
+									else{
+										arreglo = new String[2];
+									} 
+									if(arreglo[0]==null){
+										arreglo[0] = a.toString();
+									}
+									else{
+										ingresarErrorSintactico("img",aright,aleft,"Error Semantico, Atributo img ya existe, archivo Recursos.rr");
+									}	
+									RESULT = arreglo;
+								:}
+								|PROPIEDADESHEROE:b  CORAZONES:a
+								{:	
+									String[] arreglo; 
+									if(b!=null){
+										arreglo = b;
+									}
+									else{
+										arreglo = new String[2];
+									} 
+									if(arreglo[1]==null){
+										arreglo[1] = a.toString();
+									} 
+									else{
+										ingresarErrorSintactico("corazones",aright,aleft,"Error Semantico, Atributo corazones ya existe, archivo Recursos.rr");
+									}	
+									RESULT = arreglo;
+								:}
+								|IMAGEN:a
+								{:	
+									String[] arreglo = new String[2]; 
+									arreglo[0] = a.toString();	
+									RESULT = arreglo;
+								:}
+								|CORAZONES:a
+								{:	
+									String[] arreglo = new String[2];
+									arreglo[1] = a.toString();	
+									RESULT = arreglo;
+								:}
+								;
+								
+		PROPIEDADESENEMIGO ::=	PROPIEDADESENEMIGO:b IMAGEN:a	
+								{:	
+									String[] arreglo; 
+									if(b!=null){
+										arreglo = b;
+									}
+									else{
+										arreglo = new String[3];
+									} 
+									if(arreglo[0]==null){
+										arreglo[0] = a.toString();
+									} 
+									else{
+										ingresarErrorSintactico(a.toString(),aright,aleft,"Error Semantico, Atributo img ya existe, archivo Recursos.rr");
+									}
+									RESULT = arreglo;
+								:}
+								|PROPIEDADESENEMIGO:b ALGORITMO:a 
+								{:	
+									String[] arreglo;
+									if(b!=null){
+										arreglo = b;
+									} 
+									else{
+										arreglo = new String[3];
+									}
+									if(arreglo[2]==null){
+										arreglo[2] = a.toString();
+									}
+									else{
+										ingresarErrorSintactico(a.toString(),aright,aleft,"Error Semantico, Atributo algoritmo ya existe, archivo Recursos.rr");
+									}
+									RESULT = arreglo;
+								:}
+								|PROPIEDADESENEMIGO:b CORAZONES:a	
+								{:	
+									String[] arreglo;
+									if(b!=null){
+										arreglo = b;
+									}
+									else{
+										arreglo = new String[3];
+									}
+									if(arreglo[1]==null){
+										arreglo[1] = a.toString();
+									}
+									else{
+										ingresarErrorSintactico(a.toString(),aright,aleft,"Error Semantico, Atributo corazones ya existe, archivo Recursos.rr");
+									}
+									RESULT = arreglo;
+								:}
+								|IMAGEN:a
+								{:	
+									String[] arreglo = new String[3];
+									arreglo[0] = a.toString();	
+									RESULT = arreglo;
+								:}
+								|ALGORITMO:a
+								{:	
+									String[] arreglo = new String[3];
+									arreglo[2] = a.toString();
+									RESULT = arreglo;
+								:}
+								|CORAZONES:a
+								{:
+									String[] arreglo = new String[3];
+									arreglo[1] = a.toString();
+									RESULT = arreglo;
+								:}
+								;
+								
+		PROPIEDADESOBSTACULO::=	IMAGEN:a DESTRUCCION:b 
+								{:	
+									String[] arreglo = new String[2];
+									arreglo[0] = a.toString();
+									arreglo[1] = b.toString();
+									RESULT = arreglo;
+								:}
+								|DESTRUCCION:a IMAGEN:b
+								{:	
+									String[] arreglo = new String[2]; 
+									arreglo[0] = b.toString(); 
+									arreglo[1] = a.toString(); 
+									RESULT = arreglo;
+								:}
+								;
+								
+		POWERUP::=	fuego:a dosPuntos llaveAbre 	IMAGEN:b
+						{: 
+							boolean ingreso = ingresoVariable("fuego","fuego",aright,aleft); 
+							Variable variable = getVariable("fuego");
+							if(variable!=null&&ingreso){ 
+								variable.setRuta(b);
+							}
+						:}
+					llaveCierre
+					
+					|bomba:a dosPuntos llaveAbre	 IMAGEN:b	 	
+						{: 
+							boolean ingreso = ingresoVariable("bomba","bomba",aright,aleft); 
+							Variable variable = getVariable("bomba"); 
+							if(variable!=null&&ingreso){ 
+								variable.setRuta(b);
+							}
+						:}
+					llaveCierre
+					
+					|bombar:a dosPuntos llaveAbre 	 IMAGEN:b 	
+						{: 
+							boolean ingreso = ingresoVariable("bombar","bombar",aright,aleft); 
+							Variable variable = getVariable("bombar"); 
+							if(variable!=null&&ingreso){ 
+								variable.setRuta(b);
+							}
+						:}
+					llaveCierre	
+					
+					|corazon:a dosPuntos llaveAbre	 IMAGEN:b		
+						{:
+							boolean ingreso = ingresoVariable("corazon","corazon",aright,aleft);
+							Variable variable = getVariable("corazon");
+							if(variable!=null&&ingreso){ 
+								variable.setRuta(b);
+							}
+						:}		
+					llaveCierre
+					
+					;
+					
+					
+					
+		IMAGEN::=		img dosPuntos ruta:a 
+						{:	
+							RESULT = a.toString(); 
+						:}
+						;
+		
+		ALGORITMO::=	algoritmo dosPuntos identificador:a 
+						{:	
+							RESULT = a.toString();
+							if(!existeMetodo(a.toString())){
+								ingresarErrorSintactico(a.toString(),aright,aleft,"Error Semantico, El metodo no ha sido declarado en inteligencia, Archivo Recursos.rr");
+							}
+						:}
+						;
+		
+		CORAZONES::=	corazones dosPuntos entero:a 
+						{:	
+							RESULT = a.toString();
+						:}
+						;
+		
+		DESTRUCCION::=	dest dosPuntos OPCION:a 
+						{:	
+							RESULT = a.toString(); 
+						:}
+						;
+		
+		OPCION::=	v 
+					{:	
+						RESULT = "v"; 
+					:}
+					|f 
+					{:	
+						RESULT = "f";
+					:}
+					;
+					
+								
+		
+								
+		
+	
+								
+				
+                        

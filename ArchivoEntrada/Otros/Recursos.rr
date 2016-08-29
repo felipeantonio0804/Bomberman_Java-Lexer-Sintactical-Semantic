@@ -1,0 +1,93 @@
+Bomba-R:{
+	img: "Imagenes/bombar.jpg"
+}
+
+heroe:heroe1{
+	ImG:"Imagenes/heroe1.jpg"
+}
+
+Enemigo:enemigo4{
+	Algoritmo: Dif_Alto
+	ImG:"Imagenes/enemigo4.jpg"
+	corazones:1
+}
+
+heroe:heroe2{
+	ImG:"Imagenes/heroe2.jpg"
+	corazones: 10
+}
+
+Enemigo:enemigo6{
+	corazones:2
+	Algoritmo: Dif_Facil
+	ImG:"Imagenes/enemigo6.jpg"
+}
+
+HerOe:heroe3{
+	corazones: 5
+	ImG:"Imagenes/heroe3.jpg"
+}
+
+Enemigo:enemigo3{
+	Algoritmo: Dif_Medio
+	ImG:"Imagenes/enemigo3.jpg"
+}
+
+HEROE:heroe4{
+	corazones: 15
+	ImG:"Imagenes/heroe4.jpg"
+}
+
+Enemigo:enemigo1{
+	ImG:"Imagenes/enemigo1.jpg"
+}
+
+
+Fuego:{
+	img:"Imagenes/fuego.jpg"
+}
+
+Enemigo:enemigo5{
+	Algoritmo: Dif_Experto
+	ImG:"Imagenes/enemigo5.jpg"
+}
+
+BOMBA:{
+	img:"Imagenes/bomba.jpg"
+}
+
+Enemigo:enemigo2{
+	corazones:10
+	Algoritmo: Dif_Facil
+	ImG:"Imagenes/enemigo2.jpg"
+}
+
+
+Corazon:{
+	img:"Imagenes/corazon.jpg"
+}
+
+OBStaCULo:destructible1{
+	ImG:"Imagenes/destructible1.jpg"
+	Dest: v
+}
+
+OBStaCULo:destructible2{
+	ImG:"Imagenes/destructible2.jpg"
+	Dest: v
+}
+
+OBStaCULo:noDestructible1{
+	ImG:"Imagenes/noDestructible1.jpg"
+	Dest: f
+}
+
+OBStaCULo:noDestructible2{
+	ImG:"Imagenes/noDestructible2.jpg"
+	Dest: f
+}
+
+OBStaCULo:noDestructible3{
+	ImG:"Imagenes/noDestructible3.jpg"
+	Dest: f
+}

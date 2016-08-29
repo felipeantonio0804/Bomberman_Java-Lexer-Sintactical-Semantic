@@ -1,0 +1,336 @@
+package AnalizadorEscenario;
+import java_cup.runtime.*;
+import Clases.*;
+import Almacenamiento.*;
+import java.util.ArrayList;
+import java.io.*;
+
+parser code
+{:
+	private Variable primerHeroe = null;
+	private ArrayList<PosicionInicial> listaPosicionInicial = new ArrayList<PosicionInicial>();
+    private Variable[][] variablesPrincipales = new Variable[16][16];
+    private Variable[][] variablesSecundarias = new Variable[16][16];
+	private ArrayList<ErrorSintactico> listaErrores = new ArrayList<ErrorSintactico>();
+	private ArrayList<Variable> listaVariables = null;
+	private ArrayList<Posicionamiento> listaPosicionamiento = new ArrayList<Posicionamiento>();
+			
+	public void ingresarErrorSintactico(String lexema,int fila,int columna,String descripcion){
+		listaErrores.add(new ErrorSintactico(lexema,fila,columna,descripcion));
+	}
+					
+	public ArrayList<ErrorSintactico> getListaErrores(){
+		return listaErrores;
+	}
+	
+	public void setListaVariables(ArrayList<Variable> listaVariables){
+		this.listaVariables = listaVariables;
+	}
+	
+	public String getTipo(String identificador){
+		if(listaVariables!=null){
+			for(int i=0;i<listaVariables.size();i++){
+				if(listaVariables.get(i).getIdentificador().toLowerCase().equals(identificador.toLowerCase())){
+					return listaVariables.get(i).getTipo().toLowerCase();
+				}
+			}
+			return null;
+		}
+		return null;
+	}
+	
+	public boolean existeVariable(String identificador){
+		if(listaVariables!=null){
+			for(int i=0;i<listaVariables.size();i++){
+				if(listaVariables.get(i).getIdentificador().toLowerCase().equals(identificador.toLowerCase())){
+					return true;
+				}
+			}
+			return false;
+		}
+		return false;
+	}
+	
+	public Variable getVariable(String identificador){
+		if(listaVariables!=null){
+			for(int i=0;i<listaVariables.size();i++){
+				if(listaVariables.get(i).getIdentificador().toLowerCase().equals(identificador.toLowerCase())){
+					return listaVariables.get(i);
+				}
+			}
+			return null;
+		}
+		return null;
+	}
+	
+	public void ingresarPosicionamiento(String identificador, int x, int y){
+		listaPosicionamiento.add(new Posicionamiento(identificador,x,y));
+	}
+	
+	public ArrayList<Posicionamiento> getListaPosicionamiento(){
+		return listaPosicionamiento;
+	}
+	
+	public Variable[][] getVariablesPrincipales(){
+		return variablesPrincipales;
+	}
+	
+	public Variable[][] getVariablesSecundarias(){
+		return variablesSecundarias;
+	}
+	
+	public Variable getPrimerHeroe(){
+		return primerHeroe;
+	}
+	
+	public void setPrimerHeroe(Variable heroe){
+		primerHeroe = heroe;
+	}
+	
+	public ArrayList<PosicionInicial> getListaPosicionInicial(){
+		return listaPosicionInicial;
+	}
+		
+    /**Metodo al que se llama automticamente ante algun error sintactico.*/
+    public void syntax_error(Symbol s){
+		try{
+			System.out.println("Error Sintactico. Línea: " + s.right + ", Columna: " + s.left + ". Identificador " + s.value + " no reconocido.");
+			ingresarErrorSintactico(s.value.toString(),s.right,s.left,"Error Sintactico, archivo Escenario.maze");
+		}
+		catch(Exception e){
+			System.out.println(e);
+		}
+	}
+    /**Metodo al que se llama en el momento en que ya no es posible una recuperacion de errores.*/
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception{
+        try{
+			System.out.println("Error Sintactico Irrecuperable. Linea: " + s.right+ ", Columna: "+s.left+". Identificador " + s.value + " no reconocido.");
+			ingresarErrorSintactico("FIN ARCHIVO",0,0,"Error Sintactico Irrecuperable, Se llego al fin de archivo sin lograr recuperacion, archivo Escenario.maze");
+		}
+		catch(Exception e){
+			System.out.println(e);
+		}
+	}
+	
+:}
+
+action code
+{:
+	boolean unHeroe = false;
+	
+	public void muestra(String s){
+		System.out.println(s);
+	}
+	
+	private String getTipo(String identificador){
+		return parser.getTipo(identificador);
+	}
+	
+	private boolean existeVariable(String identificador){
+		return parser.existeVariable(identificador);		
+	}
+	
+	private Variable getVariable(String identificador){
+		return parser.getVariable(identificador);
+	}
+	
+	private void ingresarErrorSintactico(String lexema,int fila,int columna,String descripcion){
+		parser.ingresarErrorSintactico(lexema,fila,columna,descripcion);
+	}
+	
+	private void ingresarPosicionamiento(String identificador, int x, int y, int fila, int columna){
+		if(validarIngresoAMatriz(identificador,x,y,fila,columna)){
+			parser.ingresarPosicionamiento(identificador,x,y);
+		}
+	}
+	
+	private void setVariablePrincipal(int x, int y, Variable variable){
+		Variable[][] principales = parser.getVariablesPrincipales();
+		principales[x][y] = variable;
+	}
+	
+	private void setVariableSecundaria(int x, int y, Variable variable){
+		Variable[][] secundarias = parser.getVariablesSecundarias();
+		secundarias[x][y] = variable;
+	}
+	
+	private Variable getVariablePrincipal(int x, int y){
+		Variable[][] primarias = parser.getVariablesPrincipales();
+		return primarias[x][y];
+	}
+	
+	private Variable getVariableSecundaria(int x, int y){
+		Variable[][] secundarias = parser.getVariablesSecundarias();
+		return secundarias[x][y];
+	}
+	
+	private void agregarPosicionInicial(Variable variable,String tipo,int x ,int y, int fila, int columna){
+		if(!existeVariablePosicionInicial(variable.getIdentificador())){
+			parser.getListaPosicionInicial().add(new PosicionInicial(variable,tipo,x,y));
+		}
+		else{
+			ingresarErrorSintactico(variable.getIdentificador(),fila,columna,"Error Semantico, No puede posicionarse mas de una vez un mismo enemigo en el tablero, archivo Escenario.maze");
+		}
+	}
+	
+	private boolean existeVariablePosicionInicial(String identificador){
+		ArrayList<PosicionInicial> lista = parser.getListaPosicionInicial();
+		for(int i= 0; i < lista.size(); i++){
+			if(identificador.equals(lista.get(i).getVariable().getIdentificador())){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	
+	private boolean validarIngresoAMatriz(String identificador, int x, int y, int fila, int columna){
+                Variable variable = getVariable(identificador);
+				String tipo = getTipo(identificador);
+                
+				if(getVariablePrincipal(x,y)==null){
+					if("heroe".equals(tipo)||"enemigo".equals(tipo)||"obstaculo".equals(tipo)){		
+						setVariablePrincipal(x,y,variable);
+						if("heroe".equals(tipo)||"enemigo".equals(tipo)){
+							agregarPosicionInicial(variable,tipo,x,y,fila,columna);
+						}
+						return true;
+					}
+					else{
+						ingresarErrorSintactico(identificador,fila,columna,"Error Semantico, No puede agregarse el powerup en posicion("+x+","+y+") porque no hay nada aun, archivo Escenario.maze");
+						return false;
+					}
+				}
+				
+				else if(getVariablePrincipal(x,y)!=null&&getVariableSecundaria(x,y)==null){
+					if("fuego".equals(tipo)||"corazon".equals(tipo)||"bombar".equals(tipo)||"bomba".equals(tipo)){
+							Variable primaria = getVariablePrincipal(x,y);
+							String tipoPrimaria = getTipo(primaria.getIdentificador());
+							String destruible = primaria.getDestruible();
+							if(tipoPrimaria.equals("obstaculo")&&destruible.equals("v")){
+								setVariableSecundaria(x,y,variable);
+								return true;
+							}
+							else{
+								ingresarErrorSintactico(identificador,fila,columna,"Error Semantico, No puede agregarse el powerup en posicion("+x+","+y+") porque no existe obstaculo destructible, Escenario.maze");
+								return false;
+							}
+					}
+					else{
+						ingresarErrorSintactico(identificador,fila,columna,"Error Semantico, No puede asignarse, en posicion("+x+","+y+") ya existe pieza, archivo Escenario.maze");
+						return false;
+					}
+				}
+				
+				else{
+					ingresarErrorSintactico(identificador,fila,columna,"Error Semantico, La posicion("+x+","+y+") ya esta llena no puede ingresarse, archivo Escenario.maze");
+					return false;
+				}
+    }
+	
+	
+	private void setPrimerHeroe(Variable heroe){
+		parser.setPrimerHeroe(heroe);
+	}
+	
+	private boolean poseeImagen(String identificador){
+		File archivoAuxiliar = new File(quitarComillas(getVariable(identificador).getRuta()));
+        if(!archivoAuxiliar.exists()){
+			return false;
+        }
+		else{
+			return true;
+		}
+	}
+	
+	private String quitarComillas(String ruta){
+        String cadena = ruta.substring(1, ruta.length()-1);
+        return cadena;
+    }
+	
+:}
+
+    /*Declaracion de simbolos terminales*/
+        terminal entero, asignacion, puntoComa, rango, coma, parentesisAbre, parentesisCierre, errorLexico;
+		terminal String identificador;
+	/*Declaracion de simbolos NO terminales*/
+        non terminal INICIO, CUERPO, POSICIONAMIENTO;
+		non terminal int[] VALOR;
+	/*Inicio de la gramatica*/
+        start with INICIO;
+        
+		INICIO::= 	CUERPO;
+        
+		CUERPO::=	POSICIONAMIENTO {: muestra("FIN DE ASIGNACION---------------------------------");:} CUERPO
+					|POSICIONAMIENTO {: muestra("FIN DE ASIGNACION---------------------------------");:}
+					|error puntoComa {:muestra("---------------------------------BLOQUE CON ERRORES SINTACTICOS--------------------------------");:} CUERPO;
+					
+		POSICIONAMIENTO::=	identificador:id asignacion parentesisAbre VALOR:val1 coma VALOR:val2 parentesisCierre puntoComa
+							{:	
+								if(!existeVariable(id)){ 
+									ingresarErrorSintactico(id,idright,idleft,"Error Semantico, Variable no existe en recursos, archivo Escenario.maze"); 
+								}
+								else{
+									if(getTipo(id).equals("heroe")){ 
+										if(unHeroe==false){
+											unHeroe = true;
+											setPrimerHeroe(getVariable(id.toString()));
+										}
+										else{
+											ingresarErrorSintactico(id,idright,idleft,"Error Semantico, Variable del tipo heroe ya vino una vez, archivo Escenario.maze"); 
+										}
+									}
+									if(val1!=null&&val2!=null){
+										for(int i = val1[0]; i<=val1[1];i++){
+											for(int j = val2[0]; j<=val2[1];j++){
+												if(poseeImagen(id)){
+													ingresarPosicionamiento(id,i,j,idright,idleft);
+												}
+												else{
+													ingresarErrorSintactico(id,idright,idleft,"Error Sistema, No se encontro Imagen, archivo Escenario.maze"); 
+												}
+											}
+										}
+									}
+								}								
+							:}
+							;
+		
+		VALOR::=	entero:a
+					{:  
+						if(Integer.parseInt(a.toString())>15||Integer.parseInt(a.toString())<1){
+							ingresarErrorSintactico(a.toString(),aright,aleft,"Error Semantico, Numero fuera de rango del tablero, archivo Escenario.maze");
+							RESULT = null;
+						}
+						else{
+							int [] arreglo = new int[2];
+							arreglo[0] = Integer.parseInt(a.toString());
+							arreglo[1] = Integer.parseInt(a.toString());
+							RESULT  = arreglo;
+						}
+					:}
+					|entero:a rango entero:b
+					{:	
+						if((Integer.parseInt(a.toString())>=1&&Integer.parseInt(a.toString())<=15)&&(Integer.parseInt(b.toString())>=1&&Integer.parseInt(b.toString())<=15)){
+							if(Integer.parseInt(a.toString())<=Integer.parseInt(b.toString())){
+								int [] arreglo = new int[2];
+								arreglo[0] = Integer.parseInt(a.toString());
+								arreglo[1] = Integer.parseInt(b.toString());
+								RESULT  = arreglo;
+							}
+							else{
+								ingresarErrorSintactico(b.toString(),bright,bleft,"Error Semantico, El segundo numero del rango es menor que el primero, archivo Escenario.maze");
+							}
+						}
+						else{
+							if(Integer.parseInt(a.toString())>15||Integer.parseInt(a.toString())<1){
+								ingresarErrorSintactico(a.toString(),aright,aleft,"Error Semantico, Numero fuera de rango del tablero, archivo Escenario.maze");
+							}
+							if(Integer.parseInt(b.toString())>15||Integer.parseInt(b.toString())<1){
+								ingresarErrorSintactico(b.toString(),bright,bleft,"Error Semantico, Numero fuera de rango del tablero, archivo Escenario.maze");
+							}
+							RESULT = null;
+						}
+					:}
+					;
+					
